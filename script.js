@@ -2,15 +2,25 @@ $ideaTitle = $('.input-title');
 $ideaBody = $('.input-body');
 $ideaSave = $('.save-button');
 $ideaSearch = $('.search');
-$anchor = $('.card-section');
+$cardContainer = $('.card-section');
+var qualityDisplay = ['plausible', 'genius', 'swill'];
 var quality = 0;
-recreateCards();
+$(window).on('load', reload);
 
-$ideaSave.on('click', validateInput);
-$ideaTitle.on('keyup', toggleButton);
-$ideaBody.on('keyup', toggleButton);
+$ideaSave.on('click', acceptableInput);
+$ideaTitle.on('keyup', toggleSaveButton);
+$ideaBody.on('keyup', toggleSaveButton);
+$cardContainer.on('click', '.delete-button', deleteCard);
 
-function toggleButton () {
+function reload() {
+  for (var i = 0; i < localStorage.length; i++) {
+    var returnCard = localStorage.getItem(localStorage.key(i));
+    var parsedCard = JSON.parse(returnCard);
+    cardCreater(parsedCard);
+  }
+}
+
+function toggleSaveButton () {
   if ($ideaTitle.val() === "" && $ideaBody.val() === "") {
     $ideaSave.prop("disabled", true);
   } else {
@@ -18,7 +28,7 @@ function toggleButton () {
   }
 }
 
-function validateInput () {
+function acceptableInput () {
   if ($ideaTitle.val() === "" || $ideaBody.val() === "") {
     alert("Please Enter Fillout The Title And Body Fields");
   } else {
@@ -29,72 +39,46 @@ function validateInput () {
 function userInput() {
   var ideaTitle = $ideaTitle.val();
   var ideaBody = $ideaBody.val();
-  var newestIdea = new CardInfo(ideaTitle, ideaBody);
-  cardCreater(newestIdea);
-  objectToString(newestIdea);
+  var newIdea = new CardInfo(ideaTitle, ideaBody);
+  cardCreater(newIdea);
   clearInputFields();
+  objectToString(newIdea);
 };
 
 function clearInputFields() {
-    $('.input').val('');
-};
-
-function CardInfo (title, body) {
-  this.title = title;
-  this.body = body;
-  this.quality = 'swill';
-  this.id = Date.now();
+  $('.input').val('');
 };
 
 function cardCreater(idea) {
-  $anchor.prepend(`<article id=${idea.id} class="card">
-                      <h2 class=".title-display">${idea.title}</h2>
-                      <input type="button" name="delete button" class="delete-button" onClick="deleteCard(${idea.id})">
-                      <p class="card-body">${idea.body}</p>
-                      <input type="button" class="arrow-button upvote">
-                      <input type="button" class="arrow-button downvote">
-                      <h3 class="quality">quality: <span class="quality-text">swill<span>
-                      </h3>
-                    </article>`);
+  var ideaCard = document.createElement('article');
+  ideaCard.innerHTML = (`
+    <article id=${idea.id} class="card">
+      <h2 class=".title-display">${idea.title}</h2>
+      <input type="button" name="delete button" class="delete-button">
+      <p class="card-body">${idea.body}</p>
+      <input type="button" class="arrow-button upvote">
+      <input type="button" class="arrow-button downvote">
+      <h3 class="quality">quality: <span class="quality-text">${idea.ideaQuality}<span>
+      </h3>
+    </article>
+  `);
+  $cardContainer.prepend(ideaCard);
 };
 
-function objectToString(newestIdea) {
-  var newObjectString = JSON.stringify(newestIdea);
-  localStorage.setItem(newestIdea.id, newObjectString);
-}
-
-function recreateCards() {
-  for (var i = 0; i < localStorage.length; i++) {
-    var returnCard = localStorage.getItem(localStorage.key(i));
-    var parsedCard = JSON.parse(returnCard);
-    cardCreater(parsedCard);
-  }
-}
-
-function deleteCard(id) {
-  $thisArticle = $(`#${id}`);
-  $thisArticle.css('display', 'none');
-  localStorage.removeItem(id);
-}
-
-$anchor.on('click', function () {
-  console.log('great idea');
-  quality += 1;
-  checkQuality ();
-});
-
-$anchor.on('click', function () {
-  console.log('terrible idea');
-  quality -= 1;
-  checkQuality ();
-});
-
-function checkQuality() {
-  if (quality === 1) {
-    $('.quality-text').text('plausible');
-  } else if (quality === 2) {
-    $('.quality-text').text('genius');
-  } else {
-    $('.quality-text').text('swill');
-  }
+function CardInfo (title, body, ideaQuality) {
+  this.title = title;
+  this.body = body;
+  this.id = Date.now();
+  this.ideaQuality = qualityDisplay[2];
 };
+
+function objectToString(newIdea) {
+  var newObjectString = JSON.stringify(newIdea);
+  localStorage.setItem(newIdea.id, newObjectString);
+}
+
+function deleteCard() {
+  (this).closest('article').remove();
+  localStorage.removeItem($(this).closest('article').attr('id'));
+}
+
